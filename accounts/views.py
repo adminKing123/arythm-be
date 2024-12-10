@@ -33,9 +33,13 @@ class LoginWithUsernameAPIView(APIView):
                 }, status=status.HTTP_200_OK)
             try:
                 user = User.objects.get(username=username)
-                return Response({"email": user.email}, status=status.HTTP_401_UNAUTHORIZED)
+                if (not user.is_active):
+                    return Response({"email": ["User exists but email not verified"]}, status=status.HTTP_401_UNAUTHORIZED)
+                else:
+                    return Response({"username": ["Invalid username or password."]}, status=status.HTTP_401_UNAUTHORIZED)
             except User.DoesNotExist:
                 return Response({"username": ["Invalid username or password."]}, status=status.HTTP_401_UNAUTHORIZED)
+            
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class ResgisterAPIView(APIView):
