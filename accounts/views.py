@@ -31,7 +31,7 @@ class LoginWithUsernameAPIView(APIView):
                     "token": token.key,
                     "__c__": created,
                 }, status=status.HTTP_200_OK)
-            return Response({"error": "Invalid username or password."}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"username": ["Invalid username or password."]}, status=status.HTTP_401_UNAUTHORIZED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class ResgisterAPIView(APIView):
@@ -61,7 +61,7 @@ class VerifyEmailnActivateAPIAccountView(APIView):
         if serializer.is_valid():
             data = serializer.validated_data
             CACHED_OTP = cache.get(data['email'])
-            if (CACHED_OTP != data['OTP']): return Response({"error": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST)
+            if (CACHED_OTP != data['OTP']): return Response({"OTP": ["Invalid OTP!"]}, status=status.HTTP_400_BAD_REQUEST)
             try:
                 user = User.objects.get(email=data['email'])
                 user.is_active = True
@@ -69,7 +69,7 @@ class VerifyEmailnActivateAPIAccountView(APIView):
                 cache.delete(data['email'])
                 return Response({"message": "Email verified successfully."}, status=status.HTTP_200_OK)
             except User.DoesNotExist:
-                return Response({"error": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"OTP": ["Invalid Request!"]}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ResendEmailOTPView(APIView):
@@ -100,4 +100,4 @@ class LogoutAPIView(APIView):
                     token.delete()
             return Response({"message": "Logged out successfully."}, status=status.HTTP_200_OK)
         except Token.DoesNotExist:
-            return Response({"error": "Invalid token or already logged out."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"logout": ["Invalid token or already logged out."]}, status=status.HTTP_400_BAD_REQUEST)
