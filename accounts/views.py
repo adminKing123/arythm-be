@@ -79,7 +79,7 @@ class ResendEmailOTPView(APIView):
         if serializer.is_valid():
             data = serializer.validated_data
             CACHED_OTP = cache.get(data['email'])
-            if (CACHED_OTP): return Response({"error": "OTP Already Sent"}, status=status.HTTP_400_BAD_REQUEST)
+            if (CACHED_OTP): return Response({"OTP": ["OTP Already Sent"]}, status=status.HTTP_400_BAD_REQUEST)
             OTP = generateOTP(6)
             cache.set(data["email"], OTP, timeout=120)
             if (CONFIG["DEBUG"]): data["OTP"] = OTP
