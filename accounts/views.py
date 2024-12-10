@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import LoginWithUsernameAPISerializer, LogoutAPISerializer, RegisterAPISerializer, VerifyEmailnActivateAccountAPISerializer, ResendEmailOTPAPISerializer
+from .serializers import LoginWithUsernameAPISerializer, LogoutAPISerializer, RegisterAPISerializer, VerifyEmailnActivateAccountAPISerializer, ResendEmailOTPAPISerializer, ForgotPasswordRequestAPISerializer, ResetPasswordRequestAPISerializer
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
 from rest_framework.permissions import IsAuthenticated
@@ -34,7 +34,7 @@ class LoginWithUsernameAPIView(APIView):
             try:
                 user = User.objects.get(username=username)
                 if (not user.is_active):
-                    return Response({"email": ["User exists but email not verified"]}, status=status.HTTP_401_UNAUTHORIZED)
+                    return Response({"email": user.email}, status=status.HTTP_401_UNAUTHORIZED)
                 else:
                     return Response({"username": ["Invalid username or password."]}, status=status.HTTP_401_UNAUTHORIZED)
             except User.DoesNotExist:
@@ -88,13 +88,56 @@ class ResendEmailOTPView(APIView):
             data = serializer.validated_data
             CACHED_OTP = cache.get(data['email'])
             if (CACHED_OTP): return Response({"OTP": ["OTP Already Sent"]}, status=status.HTTP_400_BAD_REQUEST)
-            OTP = generateOTP(6)
-            cache.set(data["email"], OTP, timeout=120)
-            if (CONFIG["DEBUG"]): data["OTP"] = OTP
-            return Response(data, status=status.HTTP_200_OK)
+
+            try:
+                user = User.objects.get(email=data['email'])
+                OTP = generateOTP(6)
+                cache.set(user.email, OTP, timeout=120)
+                if (CONFIG["DEBUG"]): data["OTP"] = OTP
+                return Response(data, status=status.HTTP_200_OK)
+            except User.DoesNotExist:
+                return Response({"OTP": ["Invalid Request!"]}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class ForgotPasswordRequestAPIView(APIView):
+    def post(self, request):
+        serializer = ForgotPasswordRequestAPISerializer(data=request.data)
+        if serializer.is_valid():
+            data = serializer.validated_data
+            CACHED_OTP = cache.get(f"fp-{data['email']}")
+            if (CACHED_OTP): return Response({"OTP": True}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                user = User.objects.get(email=data['email'])
+                OTP = generateOTP(6)
+                cache.set(f'fp-{user.email}', OTP, timeout=120)
+                if (CONFIG["DEBUG"]): data["OTP"] = OTP
+                return Response(data, status=status.HTTP_200_OK)
+            except User.DoesNotExist:
+                return Response({"email": ["Invalid Request!"]}, status=status.HTTP_400_BAD_REQUEST)        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class ResetPasswordRequestAPIView(APIView):
+    def post(self, request):
+        serializer = ResetPasswordRequestAPISerializer(data=request.data)
+        if serializer.is_valid():
+            data = serializer.validated_data
+            email = data['email']
+            password = data['password']
+            OTP = data['OTP']
 
+            CACHED_OTP = cache.get(f'fp-{email}')
+            if (CACHED_OTP != OTP): return Response({"OTP": ["Invalid OTP!"]}, status=status.HTTP_400_BAD_REQUEST)
 
+            try:
+                user = User.objects.get(email=email)
+                user.set_password(password)
+                user.save()
+                cache.delete(f'fp-{email}')
+                return Response({"message": "Password reset successfully."}, status=status.HTTP_200_OK)
+            except User.DoesNotExist:
+                return Response({"email": ["User with this email does not exist."]}, status=status.HTTP_404_NOT_FOUND)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
 class LogoutAPIView(APIView):
     permission_classes = [IsAuthenticated]
 

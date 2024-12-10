@@ -25,6 +25,17 @@ class VerifyEmailnActivateAccountAPISerializer(serializers.Serializer):
 
 class ResendEmailOTPAPISerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
+
+class ForgotPasswordRequestAPISerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+class ResetPasswordRequestAPISerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(required=True, write_only=True, validators=[validate_password])
+    OTP = serializers.CharField(required=True, validators=[
+            MinLengthValidator(CONFIG["OTP_LENGTH"]),
+            MaxLengthValidator(CONFIG["OTP_LENGTH"])
+        ])
     
 class LogoutAPISerializer(serializers.Serializer):
     logout_all_devices = serializers.BooleanField(default=False, required=False)
