@@ -12,8 +12,8 @@ from config import CONFIG
 
 class AccountConfigView(APIView):
     permission_classes = [IsAuthenticated]
-    
-    def get(self, request):
+
+    def post(self, request):
         user = request.user
         return Response({
             "user": {
