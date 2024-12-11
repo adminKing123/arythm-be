@@ -10,6 +10,19 @@ from django.core.cache import cache
 from .helpers import generateOTP
 from config import CONFIG
 
+class AccountConfigView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        user = request.user
+        return Response({
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+            },
+        }, status=status.HTTP_200_OK)
+
 class LoginWithUsernameAPIView(APIView):
     def post(self, request):
         serializer = LoginWithUsernameAPISerializer(data=request.data)
