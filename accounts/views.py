@@ -21,6 +21,7 @@ class AccountConfigView(APIView):
                 "username": user.username,
                 "email": user.email,
             },
+            "SRC_URI": CONFIG["SRC_URI"],
         }, status=status.HTTP_200_OK)
 
 class LoginWithUsernameAPIView(APIView):
