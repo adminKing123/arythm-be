@@ -11,16 +11,17 @@ from .helpers import generateOTP
 from config import CONFIG
 
 class AccountConfigView(APIView):
-    permission_classes = [IsAuthenticated]
-
     def post(self, request):
-        user = request.user
+        user = request.user if request.user.is_authenticated else None
+
+        userData = {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+        } if user else None
+
         return Response({
-            "user": {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email,
-            },
+            "user": userData,
             "SRC_URI": CONFIG["SRC_URI"],
         }, status=status.HTTP_200_OK)
 
