@@ -104,10 +104,24 @@ class SongArtistInline(admin.TabularInline):
     model = SongArtist
     extra = 0  # Number of empty forms to display initially
 
+    def get_queryset(self, request):
+        """
+        Override the default queryset to order SongArtist by the related Artist name.
+        """
+        queryset = super().get_queryset(request)
+        return queryset.order_by('artist__name')
+
 # Inline for SongTag relationship
 class SongTagInline(admin.TabularInline):
     model = SongTag
     extra = 0
+
+    def get_queryset(self, request):
+        """
+        Override the default queryset to order SongArtist by the related Artist name.
+        """
+        queryset = super().get_queryset(request)
+        return queryset.order_by('tag__name')
 
 @admin.register(Song)
 class SongAdmin(admin.ModelAdmin):
