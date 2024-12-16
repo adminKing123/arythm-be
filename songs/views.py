@@ -1,9 +1,13 @@
 from rest_framework import viewsets
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 from .models import Album, Artist, Tag, Song, UserSongHistory
 from .serializers import AlbumSerializer, ArtistSerializer, TagSerializer, SongSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import SongFilter, ArtistFilter, AlbumFilter, TagFilter
 from django.utils.timezone import now
+from .functions import get_slides
 
 
 class AlbumViewSet(viewsets.ReadOnlyModelViewSet):
@@ -47,3 +51,7 @@ class SongViewSet(viewsets.ReadOnlyModelViewSet):
         song.count += 1
         song.save()
         return super().retrieve(request, *args, **kwargs)
+    
+class HeroSlidesViewSet(APIView):
+    def get(self, request):
+        return Response(get_slides(request), status=status.HTTP_200_OK)
