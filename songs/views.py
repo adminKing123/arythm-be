@@ -1,9 +1,9 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Album, Artist, Tag, Song, UserSongHistory
-from .serializers import AlbumSerializer, ArtistSerializer, TagSerializer, SongSerializer
+from .serializers import AlbumSerializer, ArtistSerializer, TagSerializer, SongSerializer, UserSongHistorySerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import SongFilter, ArtistFilter, AlbumFilter, TagFilter
 from django.utils.timezone import now
@@ -52,6 +52,19 @@ class SongViewSet(viewsets.ReadOnlyModelViewSet):
         song.save()
         return super().retrieve(request, *args, **kwargs)
     
+class UserSongHistoryViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    A viewset for viewing the song history of the authenticated user.
+    """
+    serializer_class = UserSongHistorySerializer
+    filter_backends = (DjangoFilterBackend,)
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Ensure the queryset is filtered for the authenticated user
+        return UserSongHistory.objects.filter(user=self.request.user)
+
+
 class HeroSlidesViewSet(APIView):
     def get(self, request):
         return Response(get_slides(request), status=status.HTTP_200_OK)
