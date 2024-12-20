@@ -52,18 +52,6 @@ class SongViewSet(viewsets.ReadOnlyModelViewSet):
         song.count += 1
         song.save()
         return super().retrieve(request, *args, **kwargs)
-    
-class UserSongHistoryViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    A viewset for viewing the song history of the authenticated user.
-    """
-    serializer_class = UserSongHistorySerializer
-    filter_backends = (DjangoFilterBackend,)
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        return self.request.user.song_history.all()
-
 
 class HeroSlidesViewSet(APIView):
     def get(self, request):
@@ -112,3 +100,35 @@ class UserLikedSongView(APIView):
             return Response({"detail": "id is required!"}, status=status.HTTP_404_NOT_FOUND)
         except UserLikedSong.DoesNotExist:
             return Response({"detail": "Song not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+# class UserSongHistoryViewSet(viewsets.ReadOnlyModelViewSet):
+#     """
+#     A viewset for viewing the song history of the authenticated user.
+#     """
+#     serializer_class = UserSongHistorySerializer
+#     filter_backends = (DjangoFilterBackend,)
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def get_queryset(self):
+#         return self.request.user.song_history.all()
+    
+class UserSongHistoryView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        paginator = CustomLimitOffsetPagination()
+        paginated_history_songs = paginator.paginate_queryset(request.user.song_history.all(), request)
+        serializer = UserLikedSongSerializer(paginated_history_songs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    def delete(self, request):
+        try:
+            id = int(request.data.get('id'))
+            historySongRecord = request.user.song_history.get(id=id)
+            historySongRecord.delete()
+            return Response({"detail": "Song removed from history songs."}, status=status.HTTP_204_NO_CONTENT)
+        except ValueError:
+            return Response({"detail": "id is required!"}, status=status.HTTP_404_NOT_FOUND)
+        except UserSongHistory.DoesNotExist:
+            return Response({"detail": "Song history not found!"}, status=status.HTTP_404_NOT_FOUND)
