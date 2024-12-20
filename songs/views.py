@@ -102,8 +102,9 @@ class UserLikedSongView(APIView):
 
     def delete(self, request):
         try:
-            id = int(request.data.get('id'))
-            likedSongRecord = request.user.liked_songs.get(id=id)
+            song_id = int(request.data.get('song_id'))
+            song = get_object_or_404(Song, id=song_id)
+            likedSongRecord = request.user.liked_songs.get(song=song)
             likedSongRecord.delete()
             return Response({"detail": "Song removed from liked songs."}, status=status.HTTP_204_NO_CONTENT)
         except ValueError:
