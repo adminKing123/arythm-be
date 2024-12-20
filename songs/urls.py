@@ -12,7 +12,7 @@ router.register(r'songs', SongViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('get-slides', HeroSlidesViewSet.as_view(), name='get_slides'),
-    path('liked-songs/', UserLikedSongView.as_view(), name='liked-songs'),
-    path('liked-songs/<int:id>/', UserLikedSongView.as_view(), name='liked-song-detail'),
+    path('liked-songs', UserLikedSongView.as_view(), name='liked-songs'),
+    path('liked-songs/<int:id>', UserLikedSongView.as_view(), name='liked-song-detail'),
     path('songs-history/', UserSongHistoryView.as_view(), name='songs-history'),
 ]

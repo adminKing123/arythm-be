@@ -92,7 +92,7 @@ class UserLikedSongView(APIView):
             song = get_object_or_404(Song, id=song_id)
             
             if UserLikedSong.objects.filter(user=request.user, song=song).exists():
-                return Response({"detail": "Song already liked."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"detail": "Song already liked."}, status=status.HTTP_201_CREATED)
             request.user.liked_songs.create(song=song)
             
             return Response({"detail": "Song liked successfully."}, status=status.HTTP_201_CREATED)
@@ -110,18 +110,6 @@ class UserLikedSongView(APIView):
             return Response({"detail": "id is required!"}, status=status.HTTP_404_NOT_FOUND)
         except UserLikedSong.DoesNotExist:
             return Response({"detail": "Song not found"}, status=status.HTTP_404_NOT_FOUND)
-
-
-# class UserSongHistoryViewSet(viewsets.ReadOnlyModelViewSet):
-#     """
-#     A viewset for viewing the song history of the authenticated user.
-#     """
-#     serializer_class = UserSongHistorySerializer
-#     filter_backends = (DjangoFilterBackend,)
-#     permission_classes = [permissions.IsAuthenticated]
-
-#     def get_queryset(self):
-#         return self.request.user.song_history.all()
     
 class UserSongHistoryView(APIView):
     permission_classes = [permissions.IsAuthenticated]
