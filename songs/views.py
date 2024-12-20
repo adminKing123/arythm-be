@@ -38,6 +38,9 @@ class SongViewSet(viewsets.ReadOnlyModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         user = request.user
         song = self.get_object()
+
+        liked = None
+
         if user.is_authenticated:
             user_song_history, created = UserSongHistory.objects.update_or_create(
                 user=user,
@@ -49,9 +52,16 @@ class SongViewSet(viewsets.ReadOnlyModelViewSet):
             else:
                 user_song_history.count = 1
             user_song_history.save()
+
+            liked = user.liked_songs.filter(song=song).exists()
         song.count += 1
         song.save()
-        return super().retrieve(request, *args, **kwargs)
+        response = super().retrieve(request, *args, **kwargs)
+        
+        if liked is not None:
+            response.data['liked'] = liked
+        
+        return response
 
 class HeroSlidesViewSet(APIView):
     def get(self, request):
