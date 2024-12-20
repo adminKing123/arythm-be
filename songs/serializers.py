@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Album, Artist, Tag, Song, UserSongHistory
+from .models import Album, Artist, Tag, Song, UserSongHistory, UserLikedSong
 
 class AlbumSerializer(serializers.ModelSerializer):
 
@@ -28,7 +28,7 @@ class SongSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Song
-        fields = ['id', 'title', 'url', 'original_name', 'lyrics', 'album', 'tags', 'artists', 'count']
+        fields = ['id', 'title', 'url', 'original_name', 'lyrics', 'album', 'tags', 'artists', 'count', 'liked_count']
 
     # To add tags and artists, we need to get them through the related models
     def to_representation(self, instance):
@@ -50,3 +50,10 @@ class UserSongHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = UserSongHistory
         fields = ['id', 'song', 'accessed_at', 'count']
+
+class UserLikedSongSerializer(serializers.ModelSerializer):
+    song = SongSerializer()
+
+    class Meta:
+        model = UserLikedSong
+        fields = ['id', 'song', 'liked_at']

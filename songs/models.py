@@ -111,6 +111,7 @@ class Song(models.Model):
     lyrics = models.CharField(max_length=10000, null=False)
     album = models.ForeignKey(Album, on_delete=models.CASCADE, related_name='songs')
     count = models.PositiveBigIntegerField(default=0)
+    liked_count = models.PositiveBigIntegerField(default=0)
 
     class Meta:
         ordering = ['-id']
@@ -177,3 +178,23 @@ class UserSongHistory(models.Model):
             models.UniqueConstraint(fields=['user', 'song'], name='unique_user_song_history')
         ]
         ordering = ['-accessed_at']
+
+class UserLikedSong(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='liked_songs')
+    song = models.ForeignKey('Song', on_delete=models.CASCADE, related_name='liked_by')
+    liked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'song')
+        ordering = ['-liked_at']
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            self.song.liked_count += 1
+            self.song.save(update_fields=['liked_count'])
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        self.song.liked_count -= 1
+        self.song.save(update_fields=['liked_count'])
+        super().delete(*args, **kwargs)

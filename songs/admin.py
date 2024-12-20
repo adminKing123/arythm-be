@@ -1,7 +1,7 @@
 from typing import Any
 from django.contrib import admin
 from django.http.request import HttpRequest
-from .models import Album, Artist, Tag, Song, SongArtist, SongTag, UserSongHistory
+from .models import Album, Artist, Tag, Song, SongArtist, SongTag, UserSongHistory, UserLikedSong
 from django.utils.safestring import mark_safe
 from config import CONFIG
 from .admin_forms import SongAdminForm, AlbumAdminForm, ArtistAdminForm
@@ -12,6 +12,12 @@ class UserSongHistoryAdmin(admin.ModelAdmin):
     list_display = ['user__username', 'song__original_name', 'accessed_at', 'count']
     sortable_by = ['accessed_at', 'count']
     readonly_fields = ['user', 'song', 'accessed_at', 'count']
+
+@admin.register(UserLikedSong)
+class UserLikedSongAdmin(admin.ModelAdmin):
+    list_display = ['user__username', 'song__original_name', 'liked_at']
+    sortable_by = ['liked_at']
+    readonly_fields = ['user', 'song', 'liked_at']
 
 # Register Album model
 @admin.register(Album)
@@ -112,9 +118,9 @@ class SongTagInline(admin.TabularInline):
 @admin.register(Song)
 class SongAdmin(admin.ModelAdmin):
     form = SongAdminForm
-    list_display = ['original_name', 'album_name', 'album__year', 'custom_url', 'count']  # Add 'artist_names' to list_display
+    list_display = ['original_name', 'album_name', 'album__year', 'custom_url', 'count', 'liked_count']  # Add 'artist_names' to list_display
     search_fields = ['original_name']
-    sortable_by = ['original_name', 'album__year', 'count']
+    sortable_by = ['original_name', 'album__year', 'count', 'liked_count']
     inlines = [SongArtistInline, SongTagInline]  # Show SongArtists and SongTags as inlines
 
     def get_fields(self, request, obj=None):
@@ -127,7 +133,7 @@ class SongAdmin(admin.ModelAdmin):
         if obj:  # Editing or viewing an existing Song
             return ['audio_preview', 'custom_lyrics', 'title', 'url', 'original_name', 'album_name', 'count']
         else:  # Adding a new Song
-            return ['count']
+            return ['count', 'liked_count']
 
     # Custom method to display album name instead of ID
     def album_name(self, obj):
