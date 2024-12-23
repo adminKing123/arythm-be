@@ -59,6 +59,19 @@ class UserLikedSongSerializer(serializers.ModelSerializer):
         fields = ['id', 'song', 'liked_at']
 
 class PlaylistSerializer(serializers.ModelSerializer):
+    songs_count = serializers.SerializerMethodField()
+    thumbnail = serializers.SerializerMethodField()
+
     class Meta:
         model = Playlist
-        fields = ['id', 'name', 'privacy_type']
+        fields = ['id', 'name', 'privacy_type', 'songs_count', 'thumbnail']
+
+    def get_songs_count(self, obj):
+        return obj.songs.count()
+
+    def get_thumbnail(self, obj):
+        first_song = obj.songs.first()
+        if first_song and first_song.album:
+            return first_song.album.thumbnail300x300
+        return None
+
