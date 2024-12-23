@@ -166,7 +166,10 @@ class LatestUserPlaylists(APIView):
         return Response(response_data)
     
 class GlobalSearchAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def get(self, request, *args, **kwargs):
+        user = request.user
         query = request.query_params.get('q', '')
         limit = 4
 
@@ -177,7 +180,7 @@ class GlobalSearchAPIView(APIView):
         used_song_ids = set()
 
         # Search in user history and get unique song IDs
-        user_histories = UserSongHistory.objects.filter(
+        user_histories = user.song_history.filter(
             Q(song__original_name__icontains=query) |
             Q(song__album__title__icontains=query) |
             Q(song__song_artists__artist__name__icontains=query)
