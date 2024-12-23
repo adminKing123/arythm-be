@@ -197,7 +197,7 @@ class GlobalSearchAPIView(APIView):
         used_song_ids.update(songs.values_list('id', flat=True))
 
         # Search in user liked songs, excluding already used song IDs
-        user_liked_songs = UserLikedSong.objects.filter(
+        user_liked_songs = user.liked_songs.filter(
             Q(song__original_name__icontains=query) |
             Q(song__album__title__icontains=query) |
             Q(song__song_artists__artist__name__icontains=query)
