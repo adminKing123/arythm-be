@@ -173,29 +173,42 @@ class GlobalSearchAPIView(APIView):
         if not query:
             return Response({'error': 'Query parameter "q" is required.'}, status=400)
 
-        # Search and limit results
+        # Initialize an empty set to track used song IDs
+        used_song_ids = set()
+
+        # Search in user history and get unique song IDs
         user_histories = UserSongHistory.objects.filter(
-            Q(song__title__icontains=query) |
+            Q(song__original_name__icontains=query) |
             Q(song__album__title__icontains=query) |
             Q(song__song_artists__artist__name__icontains=query)
-        ).select_related('song__album').prefetch_related('song__song_artists__artist')[:limit]
+        ).select_related('song__album').prefetch_related('song__song_artists__artist').distinct()[:limit]
+        used_song_ids.update(user_histories.values_list('song_id', flat=True))
 
+        # Search in songs, excluding already used song IDs
         songs = Song.objects.filter(
             Q(title__icontains=query) |
             Q(lyrics__icontains=query) |
             Q(album__title__icontains=query) |
             Q(song_artists__artist__name__icontains=query)
-        ).select_related('album').prefetch_related('song_artists__artist')[:limit]
+        ).exclude(id__in=used_song_ids).select_related('album').prefetch_related('song_artists__artist').distinct()[:limit]
+        used_song_ids.update(songs.values_list('id', flat=True))
 
+        # Search in user liked songs, excluding already used song IDs
         user_liked_songs = UserLikedSong.objects.filter(
-            Q(song__title__icontains=query) |
+            Q(song__original_name__icontains=query) |
             Q(song__album__title__icontains=query) |
             Q(song__song_artists__artist__name__icontains=query)
-        ).select_related('song__album').prefetch_related('song__song_artists__artist')[:limit]
+        ).exclude(song_id__in=used_song_ids).select_related('song__album').prefetch_related('song__song_artists__artist').distinct()[:limit]
+        used_song_ids.update(user_liked_songs.values_list('song_id', flat=True))
 
-        artists = Artist.objects.filter(Q(name__icontains=query))[:limit]
-        albums = Album.objects.filter(Q(title__icontains=query))[:limit]
-        playlists = Playlist.objects.filter(Q(name__icontains=query))[:limit]
+        # Search for artists
+        artists = Artist.objects.filter(Q(name__icontains=query)).distinct()[:limit]
+
+        # Search for albums
+        albums = Album.objects.filter(Q(title__icontains=query)).distinct()[:limit]
+
+        # Search for playlists
+        playlists = Playlist.objects.filter(Q(name__icontains=query)).distinct()[:limit]
 
         # Serialize results
         data = {
