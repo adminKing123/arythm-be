@@ -131,3 +131,35 @@ class UserSongHistoryView(APIView):
             return Response({"detail": "id is required!"}, status=status.HTTP_404_NOT_FOUND)
         except UserSongHistory.DoesNotExist:
             return Response({"detail": "Song history not found!"}, status=status.HTTP_404_NOT_FOUND)
+
+class LatestUserPlaylists(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        limit = 12
+
+        response_data = []
+
+        user = request.user
+        liked_songs_count = user.liked_songs.count()
+        if (liked_songs_count):
+            response_data.append({
+                "id": "liked_songs",
+                "name": "Liked Songs",
+                "privacy_type": "Private",
+                "songs_count": liked_songs_count,
+                "thumbnail": user.liked_songs.first().song.album.thumbnail300x300
+            })
+            limit-=1
+
+        playlists = user.playlists.all()[:limit]
+
+        for playlist in playlists:
+            response_data.append({
+                "id": playlist.id,
+                "name": playlist.name,
+                "privacy_type": playlist.privacy_type,
+                "songs_count": playlist.songs.count(),
+                "thumbnail": playlist.songs.first().album.thumbnail300x300,
+            })
+        return Response(response_data)

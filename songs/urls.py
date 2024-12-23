@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import AlbumViewSet, ArtistViewSet, TagViewSet, SongViewSet, UserSongHistoryView, HeroSlidesViewSet, UserLikedSongView
+from .views import AlbumViewSet, ArtistViewSet, TagViewSet, SongViewSet, UserSongHistoryView, HeroSlidesViewSet, UserLikedSongView, LatestUserPlaylists
 
 router = DefaultRouter()
 router.register(r'albums', AlbumViewSet)
@@ -15,4 +15,5 @@ urlpatterns = [
     path('liked-songs', UserLikedSongView.as_view(), name='liked-songs'),
     path('liked-songs/<int:id>', UserLikedSongView.as_view(), name='liked-song-detail'),
     path('songs-history/', UserSongHistoryView.as_view(), name='songs-history'),
+    path('latest-playlists', LatestUserPlaylists.as_view(), name='latest-playlists'),
 ]

@@ -198,3 +198,22 @@ class UserLikedSong(models.Model):
         self.song.liked_count -= 1
         self.song.save(update_fields=['liked_count'])
         super().delete(*args, **kwargs)
+
+class Playlist(models.Model):
+    PRIVACY_CHOICES = [
+        ('Private', 'Private'),
+        ('Public', 'Public'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='playlists')
+    name = models.CharField(max_length=255, unique=True, null=False)
+    privacy_type = models.CharField(max_length=7, choices=PRIVACY_CHOICES, default='Private')
+    songs = models.ManyToManyField('Song', related_name='playlists')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+    
+    class Meta:
+        ordering = ['-updated_at']

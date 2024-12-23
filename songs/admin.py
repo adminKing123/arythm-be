@@ -1,7 +1,7 @@
 from typing import Any
 from django.contrib import admin
 from django.http.request import HttpRequest
-from .models import Album, Artist, Tag, Song, SongArtist, SongTag, UserSongHistory, UserLikedSong
+from .models import Album, Artist, Tag, Song, SongArtist, SongTag, UserSongHistory, UserLikedSong, Playlist
 from django.utils.safestring import mark_safe
 from config import CONFIG
 from .admin_forms import SongAdminForm, AlbumAdminForm, ArtistAdminForm
@@ -162,3 +162,10 @@ class SongAdmin(admin.ModelAdmin):
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
         return form
+
+@admin.register(Playlist)
+class PlaylistAdmin(admin.ModelAdmin):
+    list_display = ('name', 'user', 'privacy_type', 'created_at', 'updated_at')
+    list_filter = ('privacy_type', 'created_at', 'updated_at')
+    search_fields = ('name', 'user__username')  # Allows searching by name or username of the user
+    ordering = ('-updated_at',)
