@@ -2,14 +2,15 @@ from rest_framework import viewsets, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Album, Artist, Tag, Song, UserSongHistory, UserLikedSong
-from .serializers import AlbumSerializer, ArtistSerializer, TagSerializer, SongSerializer, UserSongHistorySerializer, UserLikedSongSerializer
+from .models import Album, Artist, Tag, Song, UserSongHistory, UserLikedSong, Playlist
+from .serializers import AlbumSerializer, ArtistSerializer, TagSerializer, SongSerializer, UserSongHistorySerializer, UserLikedSongSerializer, PlaylistSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import SongFilter, ArtistFilter, AlbumFilter, TagFilter
 from django.utils.timezone import now
 from .functions import get_slides
 from django.shortcuts import get_object_or_404
 from .paginators import CustomLimitOffsetPagination
+from django.db.models import Q
 
 class AlbumViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Album.objects.all()
@@ -163,3 +164,47 @@ class LatestUserPlaylists(APIView):
                 "thumbnail": playlist.songs.first().album.thumbnail300x300,
             })
         return Response(response_data)
+    
+class GlobalSearchAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        query = request.query_params.get('q', '')
+        limit = 4
+
+        if not query:
+            return Response({'error': 'Query parameter "q" is required.'}, status=400)
+
+        # Search and limit results
+        user_histories = UserSongHistory.objects.filter(
+            Q(song__title__icontains=query) |
+            Q(song__album__title__icontains=query) |
+            Q(song__song_artists__artist__name__icontains=query)
+        ).select_related('song__album').prefetch_related('song__song_artists__artist')[:limit]
+
+        songs = Song.objects.filter(
+            Q(title__icontains=query) |
+            Q(lyrics__icontains=query) |
+            Q(album__title__icontains=query) |
+            Q(song_artists__artist__name__icontains=query)
+        ).select_related('album').prefetch_related('song_artists__artist')[:limit]
+
+        user_liked_songs = UserLikedSong.objects.filter(
+            Q(song__title__icontains=query) |
+            Q(song__album__title__icontains=query) |
+            Q(song__song_artists__artist__name__icontains=query)
+        ).select_related('song__album').prefetch_related('song__song_artists__artist')[:limit]
+
+        artists = Artist.objects.filter(Q(name__icontains=query))[:limit]
+        albums = Album.objects.filter(Q(title__icontains=query))[:limit]
+        playlists = Playlist.objects.filter(Q(name__icontains=query))[:limit]
+
+        # Serialize results
+        data = {
+            'user_history': UserSongHistorySerializer(user_histories, many=True).data,
+            'songs': SongSerializer(songs, many=True).data,
+            'user_liked_songs': UserLikedSongSerializer(user_liked_songs, many=True).data,
+            'artists': ArtistSerializer(artists, many=True).data,
+            'albums': AlbumSerializer(albums, many=True).data,
+            'playlists': PlaylistSerializer(playlists, many=True).data,
+        }
+
+        return Response(data)
