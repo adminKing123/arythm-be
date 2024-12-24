@@ -146,18 +146,19 @@ class Song(models.Model):
         super().delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):
-        # Save the instance to generate the ID
+        if self.pk:
+            original = Song.objects.get(pk=self.pk)
+            self.url = original.url
         super().save(*args, **kwargs)
-        filename = f"{self.album.code} - {self.original_name}.mp3" 
-        # Set the lyrics field after the save
-        self.lyrics = f"lrc/{self.id}.lrc"
-        file_path = f'songs-file/{filename}'
-        encoded_url = urllib.parse.quote(file_path)
-        self.url = encoded_url
-        self.title = filename
-
-        # Save the instance again to update the lyrics field
-        super().save(*args, **kwargs)
+        
+        if not self.pk or self.url == "":
+            filename = f"{self.album.code} - {self.original_name}.mp3"
+            self.lyrics = f"lrc/{self.id}.lrc"
+            file_path = f'songs-file/{filename}'
+            encoded_url = urllib.parse.quote(file_path)
+            self.url = encoded_url
+            self.title = filename
+            super().save(*args, **kwargs)
 
 class SongArtist(models.Model):
     song = models.ForeignKey(Song, on_delete=models.CASCADE, related_name='song_artists')
