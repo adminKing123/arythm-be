@@ -112,6 +112,7 @@ class Song(models.Model):
     album = models.ForeignKey(Album, on_delete=models.CASCADE, related_name='songs')
     count = models.PositiveBigIntegerField(default=0)
     liked_count = models.PositiveBigIntegerField(default=0)
+    duration = models.FloatField(default=0, null=True, blank=True)
 
     class Meta:
         ordering = ['-id']

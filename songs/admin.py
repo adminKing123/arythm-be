@@ -125,13 +125,13 @@ class SongAdmin(admin.ModelAdmin):
 
     def get_fields(self, request, obj=None):
         if obj:  # Editing or viewing an existing Song
-            return ['title', 'original_name', 'album_name', 'custom_lyrics', 'url', 'audio_preview']
+            return ['title', 'original_name', 'album_name', 'custom_lyrics', 'url', 'audio_preview', 'duration']
         else:  # Adding a new Song
             return ['original_name', 'album', 'mp3_file']
         
     def get_readonly_fields(self, request, obj):
         if obj:  # Editing or viewing an existing Song
-            return ['audio_preview', 'custom_lyrics', 'title', 'url', 'original_name', 'album_name', 'count']
+            return ['audio_preview', 'custom_lyrics', 'title', 'url', 'original_name', 'album_name', 'count', 'duration']
         else:  # Adding a new Song
             return ['count', 'liked_count']
 
