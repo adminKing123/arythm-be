@@ -127,7 +127,7 @@ class SongAdmin(admin.ModelAdmin):
         if obj:  # Editing or viewing an existing Song
             return ['title', 'original_name', 'album_name', 'custom_lyrics', 'url', 'audio_preview', 'duration']
         else:  # Adding a new Song
-            return ['original_name', 'album', 'mp3_file']
+            return ['original_name', 'album', 'mp3_file', 'duration']
         
     def get_readonly_fields(self, request, obj):
         if obj:  # Editing or viewing an existing Song
@@ -162,6 +162,9 @@ class SongAdmin(admin.ModelAdmin):
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
         return form
+    
+    class Media:
+        js = ('js/mp3_duration.js', )
 
 @admin.register(Playlist)
 class PlaylistAdmin(admin.ModelAdmin):
