@@ -184,7 +184,7 @@ class GlobalSearchAPIView(APIView):
             Q(song__original_name__icontains=query) |
             Q(song__album__title__icontains=query) |
             Q(song__song_artists__artist__name__icontains=query)
-        ).select_related('song__album').prefetch_related('song__song_artists__artist').distinct()[:limit]
+        ).select_related('song__album').prefetch_related('song__song_artists__artist').distinct()[:limit+1]
         used_song_ids.update(user_histories.values_list('song_id', flat=True))
 
         # Search in songs, excluding already used song IDs
