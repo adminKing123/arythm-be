@@ -183,7 +183,8 @@ class GlobalSearchAPIView(APIView):
         user_histories = user.song_history.filter(
             Q(song__original_name__icontains=query) |
             Q(song__album__title__icontains=query) |
-            Q(song__song_artists__artist__name__icontains=query)
+            Q(song__song_artists__artist__name__icontains=query) |
+            Q(song__song_tags__tag__name__icontains=query)
         ).select_related('song__album').prefetch_related('song__song_artists__artist').distinct()[:limit+1]
         used_song_ids.update(user_histories.values_list('song_id', flat=True))
 
@@ -192,7 +193,8 @@ class GlobalSearchAPIView(APIView):
             Q(title__icontains=query) |
             Q(lyrics__icontains=query) |
             Q(album__title__icontains=query) |
-            Q(song_artists__artist__name__icontains=query)
+            Q(song_artists__artist__name__icontains=query) | 
+            Q(song_tags__tag__name__icontains=query) 
         ).exclude(id__in=used_song_ids).select_related('album').prefetch_related('song_artists__artist').distinct()[:limit]
         used_song_ids.update(songs.values_list('id', flat=True))
 
@@ -200,7 +202,8 @@ class GlobalSearchAPIView(APIView):
         user_liked_songs = user.liked_songs.filter(
             Q(song__original_name__icontains=query) |
             Q(song__album__title__icontains=query) |
-            Q(song__song_artists__artist__name__icontains=query)
+            Q(song__song_artists__artist__name__icontains=query) |
+            Q(song__song_tags__tag__name__icontains=query)
         ).exclude(song_id__in=used_song_ids).select_related('song__album').prefetch_related('song__song_artists__artist').distinct()[:limit]
         used_song_ids.update(user_liked_songs.values_list('song_id', flat=True))
 
@@ -212,6 +215,9 @@ class GlobalSearchAPIView(APIView):
 
         # Search for playlists
         playlists = Playlist.objects.filter(Q(name__icontains=query)).distinct()[:limit]
+        
+        # search for tags
+        tags = Tag.objects.filter(Q(name__icontains=query)).distinct()[:limit]
 
         # Serialize results
         data = {
@@ -221,6 +227,7 @@ class GlobalSearchAPIView(APIView):
             'artists': ArtistSerializer(artists, many=True).data,
             'albums': AlbumSerializer(albums, many=True).data,
             'playlists': PlaylistSerializer(playlists, many=True).data,
+            'tags': TagSerializer(tags, many=True).data,
         }
 
         return Response(data)
