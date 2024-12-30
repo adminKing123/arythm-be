@@ -243,7 +243,7 @@ class SongSearchView(APIView):
             if searchby == '1':
                 songs = songs.filter(original_name__icontains=q)
             elif searchby == '2':
-                songs = songs.filter(song_artists__artist__name__icontains=q)
+                songs = songs.filter(song_artists__artist__name__icontains=q).distinct()
             elif searchby == '3':
                 songs = songs.filter(album__title__icontains=q)
             elif searchby == '4':
