@@ -231,3 +231,38 @@ class GlobalSearchAPIView(APIView):
         }
 
         return Response(data)
+    
+class SongSearchView(APIView):
+    def get(self, request, *args, **kwargs):
+        q = request.query_params.get('q', '').strip()
+        searchby = request.query_params.get('searchby', '1')
+        sortby = request.query_params.get('sortby', '1')
+        songs = Song.objects.all()
+
+        if q:
+            if searchby == '1':
+                songs = songs.filter(original_name__icontains=q)
+            elif searchby == '2':
+                songs = songs.filter(song_artists__artist__name__icontains=q)
+            elif searchby == '3':
+                songs = songs.filter(album__title__icontains=q)
+            elif searchby == '4':
+                songs = songs.filter(song_tags__tag__name__icontains=q)
+            elif searchby == '5':
+                if q.isdigit():
+                    songs = songs.filter(album__year=int(q))
+                else:
+                    return Response({"error": "q must be a number for searchby=5"}, status=400)
+
+        if sortby == '1':
+            songs = songs.order_by('-liked_count')
+        elif sortby == '2':
+            songs = songs.order_by('-count')
+        elif sortby == '3':
+            songs = songs.order_by('-album__year')
+
+        paginator = CustomLimitOffsetPagination()
+        paginated_songs = paginator.paginate_queryset(songs, request)
+
+        serializer = SongSerializer(paginated_songs, many=True)
+        return paginator.get_paginated_response(serializer.data)
