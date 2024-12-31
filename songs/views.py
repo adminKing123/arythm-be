@@ -255,7 +255,8 @@ class SongSearchView(APIView):
                     return Response({"error": "q must be a number for searchby=5"}, status=400)
 
         if sortby == '1':
-            songs = songs.order_by('-liked_count')
+            # songs = songs.order_by('-liked_count')
+            songs = songs.order_by('-id')
         elif sortby == '2':
             songs = songs.order_by('-count')
         elif sortby == '3':
