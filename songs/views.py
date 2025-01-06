@@ -11,6 +11,7 @@ from .functions import get_slides
 from django.shortcuts import get_object_or_404
 from .paginators import CustomLimitOffsetPagination
 from django.db.models import Q
+from config import CONFIG
 
 class AlbumViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Album.objects.all()
@@ -171,7 +172,7 @@ class GlobalSearchAPIView(APIView):
     def get(self, request, *args, **kwargs):
         user = request.user
         query = request.query_params.get('q', '')
-        limit = 4
+        limit = CONFIG["GLOBAL_SEARCH_LIMIT"]
 
         if not query:
             return Response({'error': 'Query parameter "q" is required.'}, status=400)
