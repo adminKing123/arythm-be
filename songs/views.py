@@ -157,13 +157,15 @@ class LatestUserPlaylists(APIView):
         playlists = user.playlists.all()[:limit]
 
         for playlist in playlists:
-            response_data.append({
-                "id": playlist.id,
-                "name": playlist.name,
-                "privacy_type": playlist.privacy_type,
-                "songs_count": playlist.songs.count(),
-                "thumbnail": playlist.songs.first().album.thumbnail300x300,
-            })
+            total_songs = playlist.playlist_songs.count()
+            if (total_songs):
+                response_data.append({
+                    "id": playlist.id,
+                    "name": playlist.name,
+                    "privacy_type": playlist.privacy_type,
+                    "songs_count": playlist.playlist_songs.count(),
+                    "thumbnail": playlist.playlist_songs.first().song.album.thumbnail300x300,
+                })
         return Response(response_data)
     
 class GlobalSearchAPIView(APIView):

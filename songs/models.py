@@ -216,7 +216,6 @@ class Playlist(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='playlists')
     name = models.CharField(max_length=255, unique=True, null=False)
     privacy_type = models.CharField(max_length=7, choices=PRIVACY_CHOICES, default='Private')
-    songs = models.ManyToManyField('Song', related_name='playlists')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -225,3 +224,7 @@ class Playlist(models.Model):
     
     class Meta:
         ordering = ['-updated_at']
+
+class PlaylistSong(models.Model):
+    playlist = models.ForeignKey(Playlist, on_delete=models.CASCADE, related_name='playlist_songs')
+    song = models.ForeignKey(Song, on_delete=models.CASCADE, related_name='song_playlists')
