@@ -169,15 +169,15 @@ class Song(models.Model):
 
 class SongArtist(models.Model):
     song = models.ForeignKey(Song, on_delete=models.CASCADE, related_name='song_artists')
-    artist = models.ForeignKey(Artist, on_delete=models.CASCADE, related_name='song_artists')
+    artist = models.ForeignKey(Artist, on_delete=models.CASCADE, related_name='artist_songs')
 
 class SongTag(models.Model):
     song = models.ForeignKey(Song, on_delete=models.CASCADE, related_name='song_tags')
-    tag = models.ForeignKey(Tag, on_delete=models.CASCADE, related_name='song_tags')
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE, related_name='tag_songs')
 
 class UserSongHistory(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='song_history')
-    song = models.ForeignKey('Song', on_delete=models.CASCADE, related_name='user_history')
+    song = models.ForeignKey('Song', on_delete=models.CASCADE, related_name='heard_by_users')
     accessed_at = models.DateTimeField(default=now)
     count = models.PositiveBigIntegerField(default=0)
 

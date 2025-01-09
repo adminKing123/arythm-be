@@ -49,3 +49,4 @@ media/
 *.bak
 config.py
 streamer.py
+transferdb_from_prod_to_preprod.py
