@@ -2,8 +2,8 @@ from rest_framework import viewsets, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Album, Artist, Tag, Song, UserSongHistory, UserLikedSong, Playlist
-from .serializers import AlbumSerializer, ArtistSerializer, TagSerializer, SongSerializer, UserSongHistorySerializer, UserLikedSongSerializer, PlaylistSerializer
+from .models import Album, Artist, Tag, Song, UserSongHistory, UserLikedSong, Playlist, PlaylistSong
+from .serializers import AlbumSerializer, ArtistSerializer, TagSerializer, SongSerializer, UserSongHistorySerializer, UserLikedSongSerializer, PlaylistSerializer, PlaylistSongSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import SongFilter, ArtistFilter, AlbumFilter, TagFilter
 from django.utils.timezone import now
@@ -106,7 +106,69 @@ class SongViewSet(viewsets.ReadOnlyModelViewSet):
         
         return Response(response)
 
+class PlaylistViewSet(viewsets.ModelViewSet):
+    serializer_class = PlaylistSerializer
 
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return Playlist.objects.none()  # Return an empty queryset if user is not authenticated
+        return self.request.user.playlists.all()
+
+    
+    def create(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return Response({"error": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        name = request.data.get('name')
+        privacy_type = request.data.get('privacy_type', 'Private')
+        songs_id = request.data.get('songs_id')
+
+        if not songs_id or not isinstance(songs_id, list) or len(songs_id) == 0:
+            return Response(
+                {"error": "songs_id is required and must contain at least one song ID."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not name:
+            return Response(
+                {"error": "Playlist name is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        songs = Song.objects.filter(id__in=songs_id)
+        if songs.count() != len(songs_id):
+            return Response(
+                {"error": "One or more song IDs are invalid."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        playlist = Playlist.objects.create(
+            user=request.user,
+            name=name,
+            privacy_type=privacy_type
+        )
+
+        PlaylistSong.objects.bulk_create([
+            PlaylistSong(playlist=playlist, song=song) for song in songs
+        ])
+
+        serializer = self.get_serializer(playlist)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['get'])
+    def songs(self, request, pk=None):
+        playlist = self.get_object()
+
+        if playlist.privacy_type == "Private":
+            if not request.user.is_authenticated or playlist.user != request.user:
+                return Response({"error": "Access denied."}, status=status.HTTP_403_FORBIDDEN)
+
+        paginator = CustomLimitOffsetPagination()
+        paginated_songs = paginator.paginate_queryset(playlist.playlist_songs.all(), request)
+        serializer = PlaylistSongSerializer(paginated_songs, many=True)
+        paginated_response = paginator.get_paginated_response(serializer.data)
+        paginated_response.data["playlist"] = PlaylistSerializer(playlist).data
+        return paginated_response
 
 
 class HeroSlidesViewSet(APIView):

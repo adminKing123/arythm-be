@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Album, Artist, Tag, Song, UserSongHistory, UserLikedSong, Playlist
+from .models import Album, Artist, Tag, Song, UserSongHistory, UserLikedSong, Playlist, PlaylistSong
 
 class AlbumSerializer(serializers.ModelSerializer):
 
@@ -75,3 +75,9 @@ class PlaylistSerializer(serializers.ModelSerializer):
             return first_song.song.album.thumbnail300x300
         return None
 
+class PlaylistSongSerializer(serializers.ModelSerializer):
+    song = SongSerializer()
+
+    class Meta:
+        model = PlaylistSong
+        fields = ['id', 'song']

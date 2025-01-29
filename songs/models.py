@@ -214,7 +214,7 @@ class Playlist(models.Model):
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='playlists')
-    name = models.CharField(max_length=255, unique=True, null=False)
+    name = models.CharField(max_length=255, null=False)
     privacy_type = models.CharField(max_length=7, choices=PRIVACY_CHOICES, default='Private')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
