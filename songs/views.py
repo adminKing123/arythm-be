@@ -10,7 +10,7 @@ from django.utils.timezone import now
 from .functions import get_slides
 from django.shortcuts import get_object_or_404
 from .paginators import CustomLimitOffsetPagination
-from django.db.models import Q
+from django.db.models import Q, Exists, OuterRef
 from rest_framework.decorators import action
 from random import randint
 from config import CONFIG
@@ -112,7 +112,19 @@ class PlaylistViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if not self.request.user.is_authenticated:
             return Playlist.objects.none()  # Return an empty queryset if user is not authenticated
-        return self.request.user.playlists.all()
+
+        playlists = self.request.user.playlists.all()
+
+        # Check if a song_id is provided in the query params
+        song_id = self.request.query_params.get('song_id')
+        if song_id:
+            playlists = playlists.annotate(
+                contains_song=Exists(
+                    PlaylistSong.objects.filter(playlist=OuterRef('id'), song_id=song_id)
+                )
+            )
+
+        return playlists
 
     
     def create(self, request, *args, **kwargs):
@@ -169,6 +181,35 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         paginated_response = paginator.get_paginated_response(serializer.data)
         paginated_response.data["playlist"] = PlaylistSerializer(playlist).data
         return paginated_response
+    
+    @action(detail=True, methods=['post'])
+    def add_songs(self, request, pk=None):
+        """ Adds songs to an existing playlist """
+        playlist = self.get_object()
+
+        if playlist.user != request.user:
+            return Response({"error": "You do not have permission to modify this playlist."}, status=status.HTTP_403_FORBIDDEN)
+
+        songs_id = request.data.get('songs_id')
+        if not songs_id or not isinstance(songs_id, list) or len(songs_id) == 0:
+            return Response(
+                {"error": "songs_id is required and must contain at least one song ID."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        songs = Song.objects.filter(id__in=songs_id)
+        if songs.count() != len(songs_id):
+            return Response(
+                {"error": "One or more song IDs are invalid."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Add songs without checking for duplicates
+        PlaylistSong.objects.bulk_create([
+            PlaylistSong(playlist=playlist, song=song) for song in songs
+        ])
+        return Response({"message": "Songs added successfully."}, status=status.HTTP_200_OK)
+
 
 
 class HeroSlidesViewSet(APIView):

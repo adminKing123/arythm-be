@@ -61,10 +61,11 @@ class UserLikedSongSerializer(serializers.ModelSerializer):
 class PlaylistSerializer(serializers.ModelSerializer):
     songs_count = serializers.SerializerMethodField()
     thumbnail = serializers.SerializerMethodField()
+    contains_song = serializers.BooleanField(default=False)  # Default to False if not annotated
 
     class Meta:
         model = Playlist
-        fields = ['id', 'name', 'privacy_type', 'songs_count', 'thumbnail']
+        fields = ['id', 'name', 'privacy_type', 'songs_count', 'thumbnail', 'contains_song']
 
     def get_songs_count(self, obj):
         return obj.playlist_songs.count()
@@ -74,6 +75,7 @@ class PlaylistSerializer(serializers.ModelSerializer):
         if first_song:
             return first_song.song.album.thumbnail300x300
         return None
+
 
 class PlaylistSongSerializer(serializers.ModelSerializer):
     song = SongSerializer()
