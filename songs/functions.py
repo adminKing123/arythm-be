@@ -1,4 +1,5 @@
 from config import CONFIG
+import random
 
 def get_slides(request):
-    return CONFIG["slides"]
+    return random.sample(CONFIG["slides"], 3)
