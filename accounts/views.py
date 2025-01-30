@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import authenticate
 from django.core.cache import cache
+from .emailfunctions import verify_email_otp_email, email_verified_email, otp_to_reset_password_email, password_reset_successfully_email, email_verified_email
 from .helpers import generateOTP
 from config import CONFIG
 
@@ -72,7 +73,7 @@ class ResgisterAPIView(APIView):
             )
             OTP = generateOTP(6)
             cache.set(user.email, OTP, timeout=120)
-
+            verify_email_otp_email(user, OTP)
             if (CONFIG["DEBUG"]): data["OTP"] = OTP
             return Response(data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -90,6 +91,7 @@ class VerifyEmailnActivateAPIAccountView(APIView):
                 user.is_active = True
                 user.save()
                 cache.delete(data['email'])
+                email_verified_email(user)
                 return Response({"message": "Email verified successfully."}, status=status.HTTP_200_OK)
             except User.DoesNotExist:
                 return Response({"OTP": ["Invalid Request!"]}, status=status.HTTP_400_BAD_REQUEST)
@@ -108,6 +110,7 @@ class ResendEmailOTPView(APIView):
                 user = User.objects.get(email=data['email'])
                 OTP = generateOTP(6)
                 cache.set(user.email, OTP, timeout=120)
+                verify_email_otp_email(user, OTP)
                 if (CONFIG["DEBUG"]): data["OTP"] = OTP
                 return Response(data, status=status.HTTP_200_OK)
             except User.DoesNotExist:
@@ -125,6 +128,7 @@ class ForgotPasswordRequestAPIView(APIView):
                 user = User.objects.get(email=data['email'])
                 OTP = generateOTP(6)
                 cache.set(f'fp-{user.email}', OTP, timeout=120)
+                otp_to_reset_password_email(user, OTP)
                 if (CONFIG["DEBUG"]): data["OTP"] = OTP
                 return Response(data, status=status.HTTP_200_OK)
             except User.DoesNotExist:
@@ -148,6 +152,7 @@ class ResetPasswordRequestAPIView(APIView):
                 user.set_password(password)
                 user.save()
                 cache.delete(f'fp-{email}')
+                password_reset_successfully_email(user)
                 return Response({"message": "Password reset successfully."}, status=status.HTTP_200_OK)
             except User.DoesNotExist:
                 return Response({"email": ["User with this email does not exist."]}, status=status.HTTP_404_NOT_FOUND)
