@@ -71,9 +71,9 @@ class PlaylistSerializer(serializers.ModelSerializer):
         return obj.playlist_songs.count()
 
     def get_thumbnail(self, obj):
-        first_song = obj.playlist_songs.first()
-        if first_song:
-            return first_song.song.album.thumbnail300x300
+        last_song = obj.playlist_songs.last()
+        if last_song:
+            return last_song.song.album.thumbnail300x300
         return None
 
 
