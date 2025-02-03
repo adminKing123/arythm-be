@@ -126,6 +126,43 @@ class PlaylistViewSet(viewsets.ModelViewSet):
 
         return playlists
 
+    @action(detail=True, methods=['get'])
+    def random(self, request, pk=None):
+        user = request.user
+        playlist = self.get_object()
+
+        if playlist.privacy_type == "Private" and playlist.user != request.user:
+            return Response({"error": "Access denied."}, status=status.HTTP_403_FORBIDDEN)
+
+        count = playlist.playlist_songs.count()
+        index = randint(0, count - 1)
+        playlist_song = playlist.playlist_songs.only('id')[index]
+        song = playlist_song.song
+        serializer = PlaylistSongSerializer(playlist_song)
+
+        liked = None
+
+        if user.is_authenticated:
+            user_song_history, created = UserSongHistory.objects.update_or_create(
+                user=user,
+                song=song,
+                defaults={'accessed_at': now()}
+            )
+            if not created:
+                user_song_history.count += 1
+            else:
+                user_song_history.count = 1
+            user_song_history.save()
+
+            liked = user.liked_songs.filter(song=song).exists()
+        
+        song.count += 1
+        song.save()
+
+        if liked is not None:
+            serializer.data["song"]["liked"] = liked
+        return Response(serializer.data)
+
     
     def create(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -209,8 +246,6 @@ class PlaylistViewSet(viewsets.ModelViewSet):
             PlaylistSong(playlist=playlist, song=song) for song in songs
         ])
         return Response({"message": "Songs added successfully."}, status=status.HTTP_200_OK)
-
-
 
 class HeroSlidesViewSet(APIView):
     def get(self, request):
