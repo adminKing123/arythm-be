@@ -228,3 +228,6 @@ class Playlist(models.Model):
 class PlaylistSong(models.Model):
     playlist = models.ForeignKey(Playlist, on_delete=models.CASCADE, related_name='playlist_songs')
     song = models.ForeignKey(Song, on_delete=models.CASCADE, related_name='song_playlists')
+
+    class Meta:
+        ordering = ['-id']

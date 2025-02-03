@@ -62,19 +62,26 @@ class PlaylistSerializer(serializers.ModelSerializer):
     songs_count = serializers.SerializerMethodField()
     thumbnail = serializers.SerializerMethodField()
     contains_song = serializers.BooleanField(default=False)  # Default to False if not annotated
+    author = serializers.SerializerMethodField()
 
     class Meta:
         model = Playlist
-        fields = ['id', 'name', 'privacy_type', 'songs_count', 'thumbnail', 'contains_song']
+        fields = ['id', 'name', 'privacy_type', 'songs_count', 'thumbnail', 'contains_song', 'author']
 
     def get_songs_count(self, obj):
         return obj.playlist_songs.count()
 
     def get_thumbnail(self, obj):
-        last_song = obj.playlist_songs.last()
-        if last_song:
-            return last_song.song.album.thumbnail300x300
+        first_song = obj.playlist_songs.first()
+        if first_song:
+            return first_song.song.album.thumbnail300x300
         return None
+    
+    def get_author(self, obj):
+        return {
+            "id": obj.user.id,
+            "username": obj.user.username
+        }
 
 
 class PlaylistSongSerializer(serializers.ModelSerializer):
