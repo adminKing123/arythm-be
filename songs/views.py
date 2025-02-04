@@ -235,6 +235,8 @@ class PlaylistViewSet(viewsets.ModelViewSet):
             )
 
         songs = Song.objects.filter(id__in=songs_id)
+        songs_ordered = sorted(songs, key=lambda song: songs_id.index(song.id))
+
         if songs.count() != len(songs_id):
             return Response(
                 {"error": "One or more song IDs are invalid."},
@@ -243,7 +245,7 @@ class PlaylistViewSet(viewsets.ModelViewSet):
 
         # Add songs without checking for duplicates
         PlaylistSong.objects.bulk_create([
-            PlaylistSong(playlist=playlist, song=song) for song in songs
+            PlaylistSong(playlist=playlist, song=song) for song in songs_ordered
         ])
         return Response({"message": "Songs added successfully."}, status=status.HTTP_200_OK)
 
