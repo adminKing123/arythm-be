@@ -162,7 +162,6 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         if liked is not None:
             serializer.data["song"]["liked"] = liked
         return Response(serializer.data)
-
     
     def create(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -249,6 +248,43 @@ class PlaylistViewSet(viewsets.ModelViewSet):
             PlaylistSong(playlist=playlist, song=song) for song in songs_ordered
         ])
         return Response({"message": "Songs added successfully."}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'])
+    def seek(self, request, pk=None):
+        """Efficiently get the next and previous songs in a playlist."""
+        playlist = self.get_object()
+        playlistsong_id = request.query_params.get('playlistsong_id')
+        loop = request.query_params.get('loop')
+
+        current_playlistsong = None
+        next_song = None
+        prev_song = None
+
+        if (playlistsong_id):
+            try:
+                current_playlistsong = playlist.playlist_songs.get(id=playlistsong_id)
+            except PlaylistSong.DoesNotExist:
+                return Response({"error": "Song not found in playlist."}, status=status.HTTP_404_NOT_FOUND)
+
+        if (current_playlistsong):
+            next_song = playlist.playlist_songs.filter(id__gt=current_playlistsong.id).order_by('id').first()
+            prev_song = playlist.playlist_songs.filter(id__lt=current_playlistsong.id).order_by('-id').first()
+        else:
+            next_song = playlist.playlist_songs.first()
+
+        if (loop):
+            if (prev_song == None):
+                prev_song = playlist.playlist_songs.last()
+            if (next_song == None):
+                next_song = playlist.playlist_songs.first()
+
+        data = {
+            "previous_song": PlaylistSongSerializer(prev_song).data if prev_song else None,
+            "current_song": PlaylistSongSerializer(current_playlistsong).data if current_playlistsong else None,
+            "next_song": PlaylistSongSerializer(next_song).data if next_song else None
+        }
+
+        return Response(data, status=status.HTTP_200_OK)
 
 class HeroSlidesViewSet(APIView):
     def get(self, request):
