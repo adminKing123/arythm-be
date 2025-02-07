@@ -126,43 +126,6 @@ class PlaylistViewSet(viewsets.ModelViewSet):
 
         return playlists
 
-    @action(detail=True, methods=['get'])
-    def random(self, request, pk=None):
-        user = request.user
-        playlist = self.get_object()
-
-        if playlist.privacy_type == "Private" and playlist.user != request.user:
-            return Response({"error": "Access denied."}, status=status.HTTP_403_FORBIDDEN)
-
-        count = playlist.playlist_songs.count()
-        index = randint(0, count - 1)
-        playlist_song = playlist.playlist_songs.only('id')[index]
-        song = playlist_song.song
-        serializer = PlaylistSongSerializer(playlist_song)
-
-        liked = None
-
-        if user.is_authenticated:
-            user_song_history, created = UserSongHistory.objects.update_or_create(
-                user=user,
-                song=song,
-                defaults={'accessed_at': now()}
-            )
-            if not created:
-                user_song_history.count += 1
-            else:
-                user_song_history.count = 1
-            user_song_history.save()
-
-            liked = user.liked_songs.filter(song=song).exists()
-        
-        song.count += 1
-        song.save()
-
-        if liked is not None:
-            serializer.data["song"]["liked"] = liked
-        return Response(serializer.data)
-    
     def create(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return Response({"error": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
@@ -249,6 +212,68 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         ])
         return Response({"message": "Songs added successfully."}, status=status.HTTP_200_OK)
 
+class PlaylistSeekerViewSet(viewsets.ModelViewSet):
+    serializer_class = PlaylistSerializer
+
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return Playlist.objects.none()  # Return an empty queryset if user is not authenticated
+
+        playlists = Playlist.objects.filter(Q(privacy_type='Public') | Q(user=self.request.user))
+        return playlists
+    
+    @action(detail=True, methods=['get'])
+    def random(self, request, pk=None):
+        user = request.user
+        playlist = self.get_object()
+
+        if playlist.privacy_type == "Private" and playlist.user != request.user:
+            return Response({"error": "Access denied."}, status=status.HTTP_403_FORBIDDEN)
+
+        count = playlist.playlist_songs.count()
+        index = randint(0, count - 1)
+        playlist_song = playlist.playlist_songs.only('id')[index]
+        song = playlist_song.song
+        serializer = PlaylistSongSerializer(playlist_song)
+
+        liked = None
+
+        if user.is_authenticated:
+            user_song_history, created = UserSongHistory.objects.update_or_create(
+                user=user,
+                song=song,
+                defaults={'accessed_at': now()}
+            )
+            if not created:
+                user_song_history.count += 1
+            else:
+                user_song_history.count = 1
+            user_song_history.save()
+
+            liked = user.liked_songs.filter(song=song).exists()
+        
+        song.count += 1
+        song.save()
+
+        if liked is not None:
+            serializer.data["song"]["liked"] = liked
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'])
+    def songs(self, request, pk=None):
+        playlist = self.get_object()
+
+        if playlist.privacy_type == "Private":
+            if not request.user.is_authenticated or playlist.user != request.user:
+                return Response({"error": "Access denied."}, status=status.HTTP_403_FORBIDDEN)
+
+        paginator = CustomLimitOffsetPagination()
+        paginated_songs = paginator.paginate_queryset(playlist.playlist_songs.all(), request)
+        serializer = PlaylistSongSerializer(paginated_songs, many=True)
+        paginated_response = paginator.get_paginated_response(serializer.data)
+        paginated_response.data["playlist"] = PlaylistSerializer(playlist).data
+        return paginated_response
+    
     @action(detail=True, methods=['get'])
     def seek(self, request, pk=None):
         """Efficiently get the next and previous songs in a playlist."""
@@ -285,6 +310,9 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         }
 
         return Response(data, status=status.HTTP_200_OK)
+
+
+
 
 class HeroSlidesViewSet(APIView):
     def get(self, request):
@@ -438,7 +466,7 @@ class GlobalSearchAPIView(APIView):
         albums = Album.objects.filter(Q(title__icontains=query)).distinct()[:limit]
 
         # Search for playlists
-        playlists = Playlist.objects.filter(Q(name__icontains=query)).distinct()[:limit]
+        playlists = Playlist.objects.filter(Q(name__icontains=query) & (Q(privacy_type='Public') | Q(user=user))).distinct()[:limit]
         
         # search for tags
         tags = Tag.objects.filter(Q(name__icontains=query)).distinct()[:limit]
