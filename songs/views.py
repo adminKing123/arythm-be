@@ -45,7 +45,9 @@ class SongViewSet(viewsets.ReadOnlyModelViewSet):
 
         liked = None
 
-        if user.is_authenticated:
+        just_get = request.query_params.get('justget') == 'true'
+
+        if user.is_authenticated and not just_get:
             user_song_history, created = UserSongHistory.objects.update_or_create(
                 user=user,
                 song=song,
@@ -58,8 +60,10 @@ class SongViewSet(viewsets.ReadOnlyModelViewSet):
             user_song_history.save()
 
             liked = user.liked_songs.filter(song=song).exists()
-        song.count += 1
-        song.save()
+
+        if not just_get:
+            song.count += 1
+            song.save()
         response = super().retrieve(request, *args, **kwargs)
         
         if liked is not None:
@@ -105,6 +109,27 @@ class SongViewSet(viewsets.ReadOnlyModelViewSet):
             response['liked'] = liked
         
         return Response(response)
+
+    @action(detail=True, methods=['get'])
+    def related_songs(self, request, pk=None):
+        song = self.get_object()
+
+        related_songs = Song.objects.filter(album=song.album).exclude(id=song.id)
+
+        artist_ids = song.song_artists.values_list('artist_id', flat=True)
+        if artist_ids:
+            related_songs = related_songs | Song.objects.filter(song_artists__artist_id__in=artist_ids).exclude(id=song.id)
+
+        if (len(related_songs) < 25):
+            tag_ids = song.song_tags.values_list('tag_id', flat=True)
+            if tag_ids:
+                related_songs = related_songs | Song.objects.filter(song_tags__tag_id__in=tag_ids).exclude(id=song.id)
+
+        related_songs = related_songs.distinct().order_by('-count')[:24]
+
+        serializer = self.get_serializer(related_songs, many=True)
+        return Response(serializer.data)
+
 
 class PlaylistViewSet(viewsets.ModelViewSet):
     serializer_class = PlaylistSerializer
