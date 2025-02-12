@@ -46,7 +46,7 @@ def share_artist(request, id):
     return HttpResponse(make_og_tags({
         "title": artist.name,
         "description": f"Artist • {artist.artist_songs.count()} songs • 0 followers",
-        "image": GET_SRC_URI(artist.album.thumbnail300x300),
+        "image": GET_SRC_URI(artist.thumbnail300x300),
         "url": GET_APP_REDIRECT_URI(redirect_url),
         "type": "music.artist",
     }))
