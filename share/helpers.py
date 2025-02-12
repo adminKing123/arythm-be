@@ -7,6 +7,8 @@ GET_SONGS_ARTISTS = lambda artists: ", ".join(aa.artist.name for aa in artists)
 SHARE_API_MAPS = {
     "SONG": lambda id: f"song/{id}",
     "PLAYLIST": lambda id: f"playlist/{id}",
+    "ARTIST": lambda id: f"artist/{id}",
+    "ALBUM": lambda id: f"album/{id}",
 }
 
 def is_bot(request):
