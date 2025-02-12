@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Album, Artist, Tag, Song, UserSongHistory, UserLikedSong, Playlist, PlaylistSong
-from .serializers import AlbumSerializer, ArtistSerializer, TagSerializer, SongSerializer, UserSongHistorySerializer, UserLikedSongSerializer, PlaylistSerializer, PlaylistSongSerializer
+from .serializers import AlbumSerializer, ArtistSerializer, TagSerializer, SongSerializer, UserSongHistorySerializer, UserLikedSongSerializer, PlaylistSerializer, PlaylistSongSerializer, SongArtistSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import SongFilter, ArtistFilter, AlbumFilter, TagFilter
 from django.utils.timezone import now
@@ -21,11 +21,33 @@ class AlbumViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_class = AlbumFilter
 
+    @action(detail=True, methods=['get'])
+    def songs(self, request, pk=None):
+        album = self.get_object()
+
+        paginator = CustomLimitOffsetPagination()
+        paginated_songs = paginator.paginate_queryset(album.songs.all(), request)
+        serializer = SongSerializer(paginated_songs, many=True)
+        paginated_response = paginator.get_paginated_response(serializer.data)
+        paginated_response.data["album"] = AlbumSerializer(album).data
+        return paginated_response
+
 class ArtistViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Artist.objects.all()
     serializer_class = ArtistSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_class = ArtistFilter
+
+    @action(detail=True, methods=['get'])
+    def songs(self, request, pk=None):
+        artist = self.get_object()
+
+        paginator = CustomLimitOffsetPagination()
+        paginated_songs = paginator.paginate_queryset(artist.artist_songs.all(), request)
+        serializer = SongArtistSerializer(paginated_songs, many=True)
+        paginated_response = paginator.get_paginated_response(serializer.data)
+        paginated_response.data["artist"] = ArtistSerializer(artist).data
+        return paginated_response
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
