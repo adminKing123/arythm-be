@@ -259,6 +259,27 @@ class PlaylistViewSet(viewsets.ModelViewSet):
         ])
         return Response({"message": "Songs added successfully."}, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=['post'])
+    def remove_songs(self, request, pk=None):
+        playlist = self.get_object()
+
+        if playlist.user != request.user:
+            return Response({"error": "You do not have permission to modify this playlist."}, status=status.HTTP_403_FORBIDDEN)
+
+        songs_id = request.data.get('songs_id')
+        if not songs_id or not isinstance(songs_id, list) or len(songs_id) == 0:
+            return Response(
+                {"error": "songs_id is required and must contain at least one song ID."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        deleted_count, _ = PlaylistSong.objects.filter(playlist=playlist, song_id__in=songs_id).delete()
+
+        if deleted_count == 0:
+            return Response({"error": "No matching songs found in the playlist."}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"message": "Songs removed successfully."}, status=status.HTTP_200_OK)
+
 class PlaylistSeekerViewSet(viewsets.ModelViewSet):
     serializer_class = PlaylistSerializer
 
