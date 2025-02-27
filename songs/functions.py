@@ -8,7 +8,7 @@ from config import CONFIG
 import random
 
 def get_slides(request):
-    interested_ids = [2, 3]
+    interested_ids = CONFIG["interested_slide_ids"]
     slides = CONFIG["slides"]
 
     # Get slides matching interested_ids
